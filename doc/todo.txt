@@ -1,0 +1,2 @@
+что такое Web Assenmbly
+https://docs.python.org/3/library/intro.html#wasm-availability
