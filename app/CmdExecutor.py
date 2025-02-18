@@ -22,6 +22,10 @@ class Error:
 
 class ExecuteResult:
     def __init__(self, **kwargs: dict) -> None:
+        for key in ['stdout', 'stderr', 'error_msg']:
+            value = kwargs.get(key, None)
+            kwargs[key] = value.strip() if value and isinstance(value, str) else value
+
         self.cmd = kwargs.get('cmd', None)
         self.stdout = kwargs.get('stdout', None)
         self.stderr = kwargs.get('stderr', None)
@@ -33,11 +37,6 @@ class ExecuteResult:
             )
         else:
             self.error = None
-
-        for key in ['stdout', 'stderr']:
-            prop = getattr(self, key)
-            prop = prop.strip() if prop else None
-            setattr(self, key, prop)
 
     def __str__(self, indent_multi=0) -> str:
         res = ''
