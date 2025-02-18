@@ -26,6 +26,7 @@ class ExecuteResult:
             value = kwargs.get(key, None)
             kwargs[key] = value.strip() if value and isinstance(value, str) else value
 
+        self.success = false
         self.cmd = kwargs.get('cmd', None)
         self.stdout = kwargs.get('stdout', None)
         self.stderr = kwargs.get('stderr', None)
@@ -36,6 +37,7 @@ class ExecuteResult:
                 code=kwargs.get('error_code', None)
             )
         else:
+            self.success = True
             self.error = None
 
     def __str__(self, indent_multi=0) -> str:
