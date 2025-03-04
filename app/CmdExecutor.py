@@ -5,6 +5,11 @@ import subprocess
 INDENT_CHAR = ' '
 IN_DEEP_PROPS_INDENT = 2
 
+class VMWareCmd:
+    START = ''
+    STOP = ''
+
+
 class Error:
     def __init__(self, msg=None, code=None) -> None:
         self.msg = msg
@@ -26,7 +31,7 @@ class ExecuteResult:
             value = kwargs.get(key, None)
             kwargs[key] = value.strip() if value and isinstance(value, str) else value
 
-        self.success = false
+        self.success = False
         self.cmd = kwargs.get('cmd', None)
         self.stdout = kwargs.get('stdout', None)
         self.stderr = kwargs.get('stderr', None)
@@ -58,40 +63,37 @@ class ExecuteResult:
 
 class CmdExecutor:
     @staticmethod
-    def execute(command: str) -> ExecuteResult:
+    def execute(command: str, timeout: int=5) -> ExecuteResult:
+        response = None
+        result_dic = {'cmd': command}
         try:
-            res = subprocess.run(command,
+            response = subprocess.run(command,
                                  shell=True,
-                                 check=True,
+                                 check=False,
                                  capture_output=True,
                                  text=True,
-                                 timeout=2)
-
-            res = vars(res)
-            res.update({'cmd': command})
+                                 timeout=timeout)
 
         except subprocess.CalledProcessError as e:
-            res = vars(e)
-            res.update({
-                'cmd': command,
-                'error_msg': f'Error! Command [ {e.cmd} ] return non-zero code: {e.returncode}',
-                'error_code': e.returncode
+            result_dic.update(vars(e))
+            result_dic.update({
+                'error_msg': f'Error! Command [ {e.cmd} ] return non-zero code: {e.returncode}'
             })
 
         except subprocess.TimeoutExpired as e:
-            res = vars(e)
-            res.update({
-                'cmd': command,
-                'error_msg': f'Error! Command [ {e.cmd} ] stopped by timeout: {e.timeout}',
-                'error_code': None
+            result_dic.update(vars(e))
+            result_dic.update({
+                'error_msg': f'Error! Command [ {e.cmd} ] stopped by timeout: {e.timeout}'
             })
 
         except Exception as e:
-            res = vars(e)
-            res.update({
-                'cmd': command,
-                'error_msg': f'Error! Unknown error: {e}',
-                'error_code': None
+            result_dic.update(vars(e))
+            result_dic.update({
+                'error_msg': f'Error! Unknown error: {e}'
             })
 
-        return ExecuteResult(**res)
+        if response:
+            result_dic.update(vars(response))
+
+
+        return ExecuteResult(**result_dic)
