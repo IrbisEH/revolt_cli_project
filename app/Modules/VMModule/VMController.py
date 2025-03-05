@@ -13,13 +13,15 @@ class VMController:
 
     VM_FILE_EXT = '.vmx'
 
+    CMD_TIMEOUT = 120
+
     def __init__(self):
         self.executor = CmdExecutor
 
     def get_running_vm_list(self, verbose=False):
-        cmd = 'vmrun -T ws list'
-
-        response = self.executor.execute(cmd)
+        response = self.executor.execute(
+            ['vmrun' 'list']
+        )
 
         if verbose:
             print(response)
@@ -43,11 +45,12 @@ class VMController:
 
         return vm_files
 
-    def start_vm(self, vm_path, nogui=True, verbose=False):
-        cmd = f'vmrun -T ws start "{vm_path}"'
-        cmd += ' nogui' if nogui else ''
-
-        response = self.executor.execute(cmd, 5)
+    def start_vm(self, vm_path, verbose=False):
+        response = self.executor.execute(
+            ['vmrun', 'start', vm_path, 'nogui'],
+            non_blocking_mode=True,
+            timeout=self.CMD_TIMEOUT
+        )
 
         if verbose:
             print(response)
@@ -55,9 +58,10 @@ class VMController:
         return None
 
     def stop_vm(self, vm_path, verbose=False):
-        cmd =f'vmrun -T ws stop "{vm_path}"'
-
-        response = self.executor.execute(cmd, 300)
+        response = self.executor.execute(
+            ['vmrun', 'stop', vm_path],
+            timeout=self.CMD_TIMEOUT
+        )
 
         if verbose:
             print(response)

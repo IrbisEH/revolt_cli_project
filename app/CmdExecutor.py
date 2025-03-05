@@ -1,3 +1,7 @@
+import os
+import time
+import errno
+import fcntl
 import subprocess
 
 # TODO: type notation in args
@@ -36,7 +40,7 @@ class ExecuteResult:
         self.stdout = kwargs.get('stdout', None)
         self.stderr = kwargs.get('stderr', None)
 
-        if kwargs.get('error_msg', None) or kwargs.get('error_code', None):
+        if kwargs.get('error_msg', None) or kwargs.get('return_code', None):
             self.error = Error(
                 msg=kwargs.get('error_msg', None),
                 code=kwargs.get('error_code', None)
@@ -63,37 +67,66 @@ class ExecuteResult:
 
 class CmdExecutor:
     @staticmethod
-    def execute(command: str, timeout: int=5) -> ExecuteResult:
-        response = None
+    def execute(command: list, non_blocking_mode=False, timeout: int=5) -> ExecuteResult:
         result_dic = {'cmd': command}
+        process = None
+
+        # TODO: Как добавить timeout
+
         try:
-            response = subprocess.run(command,
-                                 shell=True,
-                                 check=False,
-                                 capture_output=True,
-                                 text=True,
-                                 timeout=timeout)
+            process = subprocess.Popen(
+                command,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True
+            )
 
-        except subprocess.CalledProcessError as e:
-            result_dic.update(vars(e))
+            process.wait()
+
+            if non_blocking_mode:
+                CmdExecutor.make_non_blocking(process.stdout)
+                CmdExecutor.make_non_blocking(process.stderr)
+
             result_dic.update({
-                'error_msg': f'Error! Command [ {e.cmd} ] return non-zero code: {e.returncode}'
+                'stdout': process.stdout.read(),
+                'stderr': process.stderr.read(),
+                'return_code': process.returncode
             })
 
-        except subprocess.TimeoutExpired as e:
-            result_dic.update(vars(e))
-            result_dic.update({
-                'error_msg': f'Error! Command [ {e.cmd} ] stopped by timeout: {e.timeout}'
-            })
+        except OSError as e:
+            if e.errno == errno.EAGAIN:
+                stderr_data = ''
+            else:
+                raise
 
         except Exception as e:
             result_dic.update(vars(e))
             result_dic.update({
                 'error_msg': f'Error! Unknown error: {e}'
             })
-
-        if response:
-            result_dic.update(vars(response))
+        finally:
+            # TODO
+            if process:
+                process.stdout.close()
+                process.stderr.close()
 
 
         return ExecuteResult(**result_dic)
+
+    @staticmethod
+    def make_non_blocking(file_obj):
+        fd = file_obj.fileno()
+        flags = fcntl.fcntl(fd, fcntl.F_GETFL)
+        fcntl.fcntl(fd, fcntl.F_SETFL, flags | os.O_NONBLOCK)
+
+    # @staticmethod
+    # def read_non_blocking(file_obj):
+    #     output = ''
+    #
+    #     try:
+    #         for lin in
+    #     except OSError as e:
+    #         if e.errno != errno.EAGAIN:
+    #             raise
+    #
+    #     return output
