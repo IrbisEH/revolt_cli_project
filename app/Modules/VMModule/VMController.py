@@ -20,7 +20,7 @@ class VMController:
 
     def get_running_vm_list(self, verbose=False):
         response = self.executor.execute(
-            ['vmrun' 'list']
+            ['vmrun', 'list']
         )
 
         if verbose:
@@ -82,4 +82,11 @@ class VMController:
         pass
 
     def go_to_snapshot(self, verbose=False):
+        pass
+
+    def run_sequentially(self, tasks: list, verbose=False):
+        for arg, func in tasks:
+            func(arg, verbose=verbose)
+
+    def run_in_parallel(self):
         pass

@@ -2,6 +2,7 @@ import os
 import time
 import errno
 import fcntl
+import select
 import subprocess
 
 # TODO: type notation in args
@@ -64,14 +65,32 @@ class ExecuteResult:
 
         return res
 
+# except OSError as e:
+#     # TODO: поработать с командой start
+#     # if e.errno == errno.EAGAIN:
+#     #     lines = ''
+#     # else:
+#     #     raise e
+#     lines = ''
 
 class CmdExecutor:
+    @staticmethod
+    def read_non_blocking(file_obj):
+        fd = file_obj.fileno()
+        flags = fcntl.fcntl(fd, fcntl.F_GETFL)
+        fcntl.fcntl(fd, fcntl.F_SETFL, flags | os.O_NONBLOCK)
+
+        # Проверяем, готов ли файл для чтения
+        readable, _, _ = select.select([fd], [], [], 0.1)
+
+        if fd in readable:
+            return file_obj.read() or ''
+        return ''
+
     @staticmethod
     def execute(command: list, non_blocking_mode=False, timeout: int=5) -> ExecuteResult:
         result_dic = {'cmd': command}
         process = None
-
-        # TODO: Как добавить timeout
 
         try:
             process = subprocess.Popen(
@@ -81,52 +100,25 @@ class CmdExecutor:
                 text=True
             )
 
-            process.wait()
-
-            if non_blocking_mode:
-                CmdExecutor.make_non_blocking(process.stdout)
-                CmdExecutor.make_non_blocking(process.stderr)
+            process.wait(timeout)
 
             result_dic.update({
-                'stdout': process.stdout.read(),
-                'stderr': process.stderr.read(),
+                'stdout': CmdExecutor.read_non_blocking(process.stdout) if non_blocking_mode else process.stdout.read(),
+                'stderr': CmdExecutor.read_non_blocking(process.stderr) if non_blocking_mode else process.stderr.read(),
                 'return_code': process.returncode
             })
-
-        except OSError as e:
-            if e.errno == errno.EAGAIN:
-                stderr_data = ''
-            else:
-                raise
 
         except Exception as e:
             result_dic.update(vars(e))
             result_dic.update({
                 'error_msg': f'Error! Unknown error: {e}'
             })
-        finally:
-            # TODO
-            if process:
-                process.stdout.close()
-                process.stderr.close()
 
+        finally:
+            for prop in ['stdout', 'stderr']:
+                if process and getattr(process, prop):
+                    fd = getattr(process, prop)
+                    if not fd.closed:
+                        fd.close()
 
         return ExecuteResult(**result_dic)
-
-    @staticmethod
-    def make_non_blocking(file_obj):
-        fd = file_obj.fileno()
-        flags = fcntl.fcntl(fd, fcntl.F_GETFL)
-        fcntl.fcntl(fd, fcntl.F_SETFL, flags | os.O_NONBLOCK)
-
-    # @staticmethod
-    # def read_non_blocking(file_obj):
-    #     output = ''
-    #
-    #     try:
-    #         for lin in
-    #     except OSError as e:
-    #         if e.errno != errno.EAGAIN:
-    #             raise
-    #
-    #     return output
