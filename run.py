@@ -1,5 +1,5 @@
 from app.Modules.VMModule.VMController import VMController
-
+from functools import reduce
 
 def check_all():
     controller = VMController()
@@ -38,8 +38,7 @@ def check_sequentially_tasks(controller, vm_list, type):
     controller.run_sequentially(tasks, verbose=True)
 
 if __name__ == '__main__':
-    # check_all()
-
+    check_all()
 
     controller = VMController()
     vm_list = controller.get_running_vm_list()
