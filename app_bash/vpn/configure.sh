@@ -1,52 +1,60 @@
 #!/usr/bin/env bash
 
-Execute() {
-  local command="$1"
-  local success_msg="$2"
-  local error_msg="$3"
+Logging "info" "Скрипт конфигурация VPN запущен."
 
-  Logging "info" "Выполняет команда: $command"
-
-  local output=$(bash -c "$command")
-  local exit_code=$?
-
-  if [ "$exit_code" -eq 0 ]; then
-    Logging "success" "$success_msg Вывод: $output"
-  else
-    Logging "error" "$error_msg Вывод: $output"
-    exit 1
-  fi
-}
-
+# Создать виртуальное сетевое пространство
 Execute "ip netns add $VPN_NAMESPACE" \
         "Сетевое пространство $VPN_NAMESPACE успешно создано." \
         "Ошибка! Произошла ошибка при создании сетевого пространства $VPN_NAMESPACE."
 
-Execute "ip link add "$VETH_INTFS_DEFAULT_NS" type veth peer name $VETH_INTFS_VASE_NS" \
-        "Интерфейс $VETH_INTFS_DEFAULT_NS успешно создан." \
+# Создать veth интерфейс
+Execute "ip link add "$INTFS_DEFAULT_NS" type veth peer name $INTFS_VPN_NS" \
+        "Интерфейс $INTFS_DEFAULT_NS и парный интерфейс $INTFS_VPN_NS успешно созданы." \
         "Ошибка! Произошла ошибка при создании интерфейса $VETH_INTFS_DEFAULT_NS."
 
-Execute "ip addr add $IP_DEFAULT_NS dev $VETH_INTFS_DEFAULT_NS" \
-        "Ip адрес $VPN_NAMESPACE привязан к интерфейсу $VETH_INTFS_DEFAULT_NS." \
-        "Ошибка! Произошла ошибка при привязке ip адреса $VPN_NAMESPACE к интерфейсу $VETH_INTFS_DEFAULT_NS."
+# Привязать ip адрес к интерфейсу
+Execute "ip addr add $IP_DEFAULT_NS dev $INTFS_DEFAULT_NS" \
+        "Ip адрес $IP_DEFAULT_NS привязан к интерфейсу $INTFS_DEFAULT_NS." \
+        "Ошибка! Произошла ошибка при привязке ip адреса $IP_DEFAULT_NS к интерфейсу $INTFS_DEFAULT_NS."
 
-Execute "ip link set $VETH_INTFS_DEFAULT_NS up" \
-        "Интерфейс $VETH_INTFS_DEFAULT_NS успешно запущен." \
-        "Ошибка! Произошла ошибка при запуске интерфейса $VETH_INTFS_DEFAULT_NS."
+# Включить интерфейс
+Execute "ip link set $INTFS_DEFAULT_NS up" \
+        "Интерфейс $INTFS_DEFAULT_NS успешно запущен." \
+        "Ошибка! Произошла ошибка при запуске интерфейса $INTFS_DEFAULT_NS."
 
-Execute "ip netns exec $VPN_NAMESPACE ip addr add $VETH_INTFS_VASE_NS dev $VETH_INTFS_NAME_VPN_SPACE" \
-        "Интерфейс $VETH_INTFS_DEFAULT_NS успешно запущен." \
-        "Ошибка! Произошла ошибка при запуске интерфейса $VETH_INTFS_DEFAULT_NS."
+# Привязываем парный интерфейс к виртуальному сетевому пространству
+Execute "ip link set $INTFS_VPN_NS netns $VPN_NAMESPACE" \
+        "Парный интерфейс $INTFS_VPN_NS привязан к сетевому пространству $VPN_NAMESPACE успешно." \
+        "Ошибка! Произошла ошибка при парного интерфейса $INTFS_VPN_NS к сетевому пространству $VPN_NAMESPACE."
+
+# Привязать ip адрес к интерфейсу
+Execute "ip netns exec $VPN_NAMESPACE ip addr add $IP_VPN_NS dev $INTFS_VPN_NS" \
+        "Ip адрес $IP_VPN_NS привязан к интерфейсу $INTFS_VPN_NS." \
+        "Ошибка! Произошла ошибка при привязке ip адреса $IP_VPN_NS к интерфейсу $INTFS_VPN_NS."
+
+# Включить парный интерфейс интерфейс
+Execute "ip netns exec $VPN_NAMESPACE ip link set $INTFS_VPN_NS up" \
+        "Интерфейс $INTFS_VPN_NS успешно запущен." \
+        "Ошибка! Произошла ошибка при запуске интерфейса $INTFS_VPN_NS."
+
+# Включить форвардинг IPv4-пакетов
+Execute "sysctl -w net.ipv4.ip_forward=1" \
+        "Форвардинг IPv4-пакетов включен" \
+        "Ошибка! Произошла ошибка при включении форвардинга IPv4-пакетов."
+
+# Назначить шлюз по умолчанию для виртуального сетевого пространства
+Execute "ip netns exec $VPN_NAMESPACE ip route add default via $DEFAULT_GATEWAY_VPN_NS" \
+        "Шлюз по умолчанию $DEFAULT_GATEWAY_VPN_NS для сетевого пространства $VPN_NAMESPACE успешно настроен." \
+        "Ошибка! Произошла ошибка при настройки шлюза по умолчанию $DEFAULT_GATEWAY_VPN_NS для сетевого пространства $VPN_NAMESPACE."
+
+# Добавить правило NAT
+Execute "iptables -t nat -A POSTROUTING -s $SOURCE_SUBNET -o $OUT_INTERFACE -j MASQUERADE" \
+        "Правило NAT успешно добавлено." \
+        "Ошибка! Произошла ошибка при добавлении правила NAT."
+
+Logging "info" "Скрипт конфигурация VPN завершен."
 
 
-
-
-
-#sudo ip netns exec vase_net_space ip addr add 10.0.0.2/24 dev $VETH_INTFS_NAME_VPN_SPACE
-#sudo ip netns exec vase_net_space ip link set $VETH_INTFS_NAME_VPN_SPACE up
-#sudo sysctl -w net.ipv4_forward=1
-#sudo ip netns exec vase_net_space ip route add default via 10.0.0.1
-#sudo iptables -t nat -A POSTROUTING -s 10.0.0.0/24 -o enp4s0 -j MASQUERADE
 #sudo ufw route allow in on $VETH_INTFS_NAME_DEFAULT_SPACE out on enp4s0
 #sudo ufw route allow in on enp4s0 out on $VETH_INTFS_NAME_DEFAULT_SPACE
 #

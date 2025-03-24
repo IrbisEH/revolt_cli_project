@@ -1,6 +1,6 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
-# logging.sh
+# library.sh
 
 # Цветовые коды
 RED='\033[0;31m'
@@ -40,6 +40,24 @@ Logging() {
       echo -e "${YELLOW} $msg${NC}"
       ;;
   esac
+}
+
+Execute() {
+  local command="$1"
+  local success_msg="$2"
+  local error_msg="$3"
+
+  Logging "info" "Выполняет команду: $command"
+
+  local output=$(bash -c "$command" 2>&1)
+  local exit_code=$?
+
+  if [ "$exit_code" -eq 0 ]; then
+    Logging "success" "$success_msg Вывод: '$output'"
+  else
+    Logging "error" "$error_msg Вывод: $output"
+    exit 1
+  fi
 }
 
 export -f
