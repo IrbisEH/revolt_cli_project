@@ -60,4 +60,30 @@ Execute() {
   fi
 }
 
+PingVPN() {
+  local net_space="$1"
+  local self_ip="$2"
+  local delay="$3"
+  local error=0
+
+  while true; do
+    if [ "$error" -eq 1 ]; then
+      break
+    fi
+
+    res=$(ip netns exec "$net_space" curl -s ifconfig.so | grep -oE '[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+')
+
+    if [ "$res" != "$self_ip" ]; then
+      local error=1
+      Logging "error" "Мой ip: $res"
+      break
+    fi
+
+    Logging "success" "Мой ip: $res"
+    sleep "$delay"
+  done
+
+  echo "$error"
+}
+
 export -f

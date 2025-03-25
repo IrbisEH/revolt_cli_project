@@ -52,12 +52,7 @@ Execute "iptables -t nat -A POSTROUTING -s $SOURCE_SUBNET -o $OUT_INTERFACE -j M
         "Правило NAT успешно добавлено." \
         "Ошибка! Произошла ошибка при добавлении правила NAT."
 
-# Разрешить форвардинг в UFW в виртуальное сетевое пространство
-Execute "ufw route allow in on $INTFS_DEFAULT_NS out on $OUT_INTERFACE" \
-        "Правило форвардинга 1 для UFW настроено" \
-        "Ошибка! Произошла ошибка при добавлении правила форвардинга 1 для UFW."
-
-# Разрешить форвардинг в UFW в виртуальное сетевое пространство
+# Добавить правило маршрутизации в ufw
 Execute "ufw route allow in on $INTFS_DEFAULT_NS out on $OUT_INTERFACE" \
         "Правило форвардинга 1 для UFW настроено" \
         "Ошибка! Произошла ошибка при добавлении правила форвардинга 1 для UFW."
@@ -66,14 +61,79 @@ Execute "ufw route allow in on $OUT_INTERFACE out on $INTFS_DEFAULT_NS" \
         "Правило форвардинга 2 для UFW настроено" \
         "Ошибка! Произошла ошибка при добавлении правила форвардинга 2 для UFW."
 
+# Настроить DNS сервер
+Execute "sed -i 's/nameserver/nameserver 8.8.8.8/' /etc/resolv.conf" \
+        "DNS сервер успешно настроен" \
+        "Ошибка! Произошла ошибка при настройке DNS сервера."
+
+# Настройка файлов конфигурации VPN
+# TODO: Может быть экзекутить прям сразу файлы
+CONFIG_FILE="/etc/ipsec.conf"
+
+Execute "cat > $CONFIG_FILE <<EOF
+conn $VPN_NAME
+  auto=add
+  keyexchange=ikev1
+  authby=secret
+  type=transport
+  left=%defaultroute
+  leftprotoport=17/1701
+  rightprotoport=17/1701
+  right=$VPN_SERVER_IP
+  ike=aes128-sha1-modp2048
+  esp=aes128-sha1
+EOF" \
+        "Файл конфигурации $CONFIG_FILE записан." \
+        "Ошибка! Произошла ошибка при записи файла конфигурации $CONFIG_FILE"
+
+CONFIG_FILE="/etc/ipsec.secrets"
+
+Execute "cat > $CONFIG_FILE <<EOF
+: PSK $VPN_IPSEC_PSK
+EOF" \
+        "Файл конфигурации $CONFIG_FILE записан." \
+        "Ошибка! Произошла ошибка при записи файла конфигурации $CONFIG_FILE"
+
+chmod 600 $CONFIG_FILE
+
+CONFIG_FILE="/etc/xl2tpd/xl2tpd.conf"
+
+Execute "cat > $CONFIG_FILE <<EOF
+[lac $VPN_NAME]
+lns = $VPN_SERVER_IP
+ppp debug = yes
+pppoptfile = /etc/ppp/options.l2tpd.client
+length bit = yes
+EOF" \
+        "Файл конфигурации $CONFIG_FILE записан." \
+        "Ошибка! Произошла ошибка при записи файла конфигурации $CONFIG_FILE"
+
+CONFIG_FILE="/etc/ppp/options.l2tpd.client"
+
+Execute "cat > $CONFIG_FILE <<EOF
+ipcp-accept-local
+ipcp-accept-remote
+refuse-eap
+require-chap
+noccp
+noauth
+mtu 1280
+mru 1280
+noipdefault
+defaultroute
+usepeerdns
+connect-delay 5000
+name $VPN_USER
+password $VPN_PASSWORD
+EOF" \
+        "Файл конфигурации $CONFIG_FILE записан." \
+        "Ошибка! Произошла ошибка при записи файла конфигурации $CONFIG_FILE"
+
+chmod 600 $CONFIG_FILE
+
 Logging "info" "Скрипт конфигурация VPN завершен."
 
 
-#sudo ufw route allow in on $VETH_INTFS_NAME_DEFAULT_SPACE out on enp4s0
-#sudo ufw route allow in on enp4s0 out on $VETH_INTFS_NAME_DEFAULT_SPACE
-#
-#apt-get updatep
-#apt-get install strongswan xl2tpd net-tools
 #
 #cat > /etc/ipsec.conf <<EOF
 #conn $VPN_NAME
