@@ -67,11 +67,8 @@ PingVPN() {
   local error=0
 
   while true; do
-    if [ "$error" -eq 1 ]; then
-      break
-    fi
-
-    res=$(ip netns exec "$net_space" curl -s ifconfig.so | grep -oE '[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+')
+    res=$(ip netns exec "$net_space" curl ifconfig.me)
+#    res=$(ip netns exec "$net_space" curl -s ifconfig.so)
 
     if [ "$res" != "$self_ip" ]; then
       local error=1

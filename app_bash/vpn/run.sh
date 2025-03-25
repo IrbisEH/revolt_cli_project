@@ -3,6 +3,8 @@
 # TODO: реализовать таймауты
 # TODO: реализовать относительные пути
 # TODO: убрать лог файлы из env забить из в структуру приложения
+# TODO: Подвисает тест
+# TODO: Добавить парсинг аргуметов, например script.sh --start --stop --test --clean
 
 
 CONFIGURE_SCRIPT="/home/irbis-eh/revolt_cli/app_bash/vpn/configure.sh"
@@ -30,9 +32,9 @@ if [ ! -f "$CONFIGURE_SCRIPT" ]; then
     exit 1
 fi
 
+source "$STOP_SCRIPT"
 source "$CLEAN_UP_SCRIPT"
 source "$CONFIGURE_SCRIPT"
-source "$STOP_SCRIPT"
 source "$START_SCRIPT"
 
 Logging "info" "Запускаю тест."
