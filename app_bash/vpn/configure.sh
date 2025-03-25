@@ -52,6 +52,12 @@ Execute "iptables -t nat -A POSTROUTING -s $SOURCE_SUBNET -o $OUT_INTERFACE -j M
         "Правило NAT успешно добавлено." \
         "Ошибка! Произошла ошибка при добавлении правила NAT."
 
+# Разрешить форвардинг в UFW в виртуальное сетевое пространство
+Execute "ufw route allow in on $INTFS_DEFAULT_NS out on $SOURCE_SUBNET" \
+        "Правило форвардинга 1 для UFW настроено" \
+        "Ошибка! Произошла ошибка при добавлении правила форвардинга 1 для UFW."
+
+
 Logging "info" "Скрипт конфигурация VPN завершен."
 
 
