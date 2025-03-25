@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 
-Logging "info" "Скрипт очистки конфигурация VPN запущен."
+# clean_up.sh
+
+LOG_FILE="$1"
+
+Logging "$LOG_FILE" "info" "Скрипт очистки конфигурация VPN запущен."
 
 # Проверяем форвардинг
 if [ $(sysctl -n net.ipv4.ip_forward) -eq 1 ]; then
@@ -20,6 +24,7 @@ while true; do
   RULE_NUMBER=$(echo "$FIRST" | cut -d ']' -f1 | tr -d '[] ')
 
   Execute "ufw --force delete $RULE_NUMBER" \
+          "$LOG_FILE" \
           "Правило маршрутизации $RULE_NUMBER успешно удалено." \
           "Ошибка! Произошла ошибка при удалении правило маршрутизации $RULE_NUMBER."
 done
@@ -27,6 +32,7 @@ done
 # Проверяем интерфейс, удаляем
 if ip netns list | grep -q "^$VPN_NAMESPACE"; then
   Execute "ip netns delete $VPN_NAMESPACE" \
+          "$LOG_FILE" \
           "Сетевое пространство $VPN_NAMESPACE успешно удаленно." \
           "Ошибка! Произошла ошибка при удалении сетевого пространства $VPN_NAMESPACE."
 fi
@@ -34,6 +40,7 @@ fi
 # Проверяем интерфейс, удаляем
 if ip link show "$INTFS_DEFAULT_NS" > /dev/null 2>&1; then
   Execute "ip link delete $INTFS_DEFAULT_NS" \
+          "$LOG_FILE" \
           "Интерфейс $INTFS_DEFAULT_NS успешно удален." \
           "Ошибка! Произошла ошибка при удалении интерфейса $INTFS_DEFAULT_NS."
 fi
@@ -41,10 +48,9 @@ fi
 # Проверяем правило NAT, удаляем
 if iptables -t nat -C POSTROUTING -s "$SOURCE_SUBNET" -o "$OUT_INTERFACE" -j MASQUERADE 2>/dev/null; then
     Execute "iptables -t nat -D POSTROUTING -s $SOURCE_SUBNET -o $OUT_INTERFACE -j MASQUERADE" \
+            "$LOG_FILE" \
             "Существующее правило NAT для $SOURCE_SUBNET успешно удалено." \
             "Ошибка! Произошла ошибка при удалении правила NAT для $SOURCE_SUBNET."
 fi
 
-# TODO: Надо ли чистить файлы?
-
-Logging "info" "Скрипт очистки конфигурация VPN завершен."
+Logging "$LOG_FILE" "info" "Скрипт очистки конфигурация VPN завершен."
