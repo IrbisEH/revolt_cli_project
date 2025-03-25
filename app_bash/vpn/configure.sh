@@ -53,10 +53,18 @@ Execute "iptables -t nat -A POSTROUTING -s $SOURCE_SUBNET -o $OUT_INTERFACE -j M
         "Ошибка! Произошла ошибка при добавлении правила NAT."
 
 # Разрешить форвардинг в UFW в виртуальное сетевое пространство
-Execute "ufw route allow in on $INTFS_DEFAULT_NS out on $SOURCE_SUBNET" \
+Execute "ufw route allow in on $INTFS_DEFAULT_NS out on $OUT_INTERFACE" \
         "Правило форвардинга 1 для UFW настроено" \
         "Ошибка! Произошла ошибка при добавлении правила форвардинга 1 для UFW."
 
+# Разрешить форвардинг в UFW в виртуальное сетевое пространство
+Execute "ufw route allow in on $INTFS_DEFAULT_NS out on $OUT_INTERFACE" \
+        "Правило форвардинга 1 для UFW настроено" \
+        "Ошибка! Произошла ошибка при добавлении правила форвардинга 1 для UFW."
+
+Execute "ufw route allow in on $OUT_INTERFACE out on $INTFS_DEFAULT_NS" \
+        "Правило форвардинга 2 для UFW настроено" \
+        "Ошибка! Произошла ошибка при добавлении правила форвардинга 2 для UFW."
 
 Logging "info" "Скрипт конфигурация VPN завершен."
 
@@ -64,7 +72,7 @@ Logging "info" "Скрипт конфигурация VPN завершен."
 #sudo ufw route allow in on $VETH_INTFS_NAME_DEFAULT_SPACE out on enp4s0
 #sudo ufw route allow in on enp4s0 out on $VETH_INTFS_NAME_DEFAULT_SPACE
 #
-#apt-get update
+#apt-get updatep
 #apt-get install strongswan xl2tpd net-tools
 #
 #cat > /etc/ipsec.conf <<EOF
