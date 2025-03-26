@@ -9,6 +9,7 @@ Logging "$LOG_FILE" "info" "Скрипт очистки конфигурация
 # Проверяем форвардинг
 if [ $(sysctl -n net.ipv4.ip_forward) -eq 1 ]; then
   Execute "sysctl -w net.ipv4.ip_forward=0" \
+          "$LOG_FILE" \
           "Форвардинг IPv4-пакетов успешно выключен." \
           "Ошибка! Не удалось выключить форвардинг IPv4-пакетов."
 fi

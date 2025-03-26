@@ -1,2 +1,34 @@
 что такое Web Assenmbly
 https://docs.python.org/3/library/intro.html#wasm-availability
+
+
+
+188.40.167.82
+
+sudo ip netns exec vase_space ip addr
+1: lo: <LOOPBACK> mtu 65536 qdisc noop state DOWN group default qlen 1000
+    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+3: ppp0: <POINTOPOINT,MULTICAST,NOARP,UP,LOWER_UP> mtu 1280 qdisc fq_codel state UNKNOWN group default qlen 3
+    link/ppp
+    inet 10.10.20.98 peer 10.10.20.1/32 scope global ppp0               # вот тут адрес 10.10.20.1
+       valid_lft forever preferred_lft forever
+    inet6 fe80::9d8e:3091:528b:3580 peer fe80::972d:2186:f0:7b1/128 scope link
+       valid_lft forever preferred_lft forever
+16: veth1@if17: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue state UP group default qlen 1000
+    link/ether 7a:87:a0:c3:66:a8 brd ff:ff:ff:ff:ff:ff link-netnsid 0
+    inet 10.0.0.2/24 scope global veth1
+       valid_lft forever preferred_lft forever
+    inet6 fe80::7887:a0ff:fec3:66a8/64 scope link
+       valid_lft forever preferred_lft forever
+
+
+
+
+
+sudo ip route add 188.40.167.82 via 10.0.0.2
+sudo ip netns exec vase_space ip route replace default via 10.10.20.1 dev ppp0
+sudo ip netns exec vase_space sysctl -w net.ipv4.ip_forward=1
+sudo ip netns exec vase_space iptables -t nat -A POSTROUTING -o ppp0 -j MASQUERADE
+
+
+traceroute 188.40.167.82

@@ -44,7 +44,7 @@ Execute() {
   local success_msg="$3"
   local error_msg="$4"
 
-  Logging "info" "Выполняет команду: $command"
+  Logging "$logfile" "info" "Выполняет команду: $command"
 
   local output=$(bash -c "$command" 2>&1)
   local exit_code=$?
