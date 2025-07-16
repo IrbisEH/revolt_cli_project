@@ -1,6 +1,6 @@
 import os
 from pathlib import Path
-from app.CmdExecutor import CmdExecutor
+from app_py.CmdExecutor import CmdExecutor
 
 
 # TODO: попробовать -T ws

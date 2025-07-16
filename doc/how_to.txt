@@ -1,0 +1,5 @@
+### выдать права arp сканирования для скрипта ###
+
+# предварительно скомпилировать через pyinstaller
+
+sudo setcap cap_net_raw+ep ./path_to_app
