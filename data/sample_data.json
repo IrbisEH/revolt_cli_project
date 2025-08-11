@@ -1,8 +1,9 @@
 {
-  "vm": [
+  "items": [
     {
       "name": "",
-      "vm_path": ""
+      "vmx_path": "",
+      "ip": ""
     }
   ]
 }

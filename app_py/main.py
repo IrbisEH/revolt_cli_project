@@ -17,18 +17,30 @@ load_dotenv(ETC_DIR / '.env')
 NET_INTERFACE = os.getenv("NET_INTERFACE", None)
 
 
-class Vm:
-    def __init__(self, name=None, vm_path=None, ip=None, mac=None):
+class DevItem:
+    def __init__(self, name=None, ip=None, mac=None):
         self.name = name
-        self.vm_path = vm_path
-        self.ip = None
-        self.mac = None
+        self.ip = ip
+        self.mac = mac
 
-        if mac is None:
-            manual_mac = None   # ethernet0.address — заданный вручную MAC-адрес
-            auto_mac = None     # ethernet0.generatedAddress — автоматически сгенерированный VMware
+    def __repr__(self):
+        return f'{self.__class__.__name__}: {self.name} {self.ip} {self.mac}'
 
-            with open(self.vm_path, 'r') as f:
+
+class VmItem(DevItem):
+    def __init__(self, name=None, ip=None, mac=None, vmx_path=None):
+        super().__init__(name, ip, mac)
+        self.vmx_path = vmx_path
+
+        if not self.mac:
+            self.read_vmx()
+
+    def read_vmx(self):
+        manual_mac = None   # ethernet0.address — заданный вручную MAC-адрес
+        auto_mac = None     # ethernet0.generatedAddress — автоматически сгенерированный VMware
+
+        try:
+            with open(self.vmx_path, 'r') as f:
                 for line in f.readlines():
                     items = [l.strip() for l in line.split('=')]
                     if len(items) == 2:
@@ -36,21 +48,48 @@ class Vm:
                             manual_mac = items[1]
                         if items[0] == 'ethernet0.generatedAddress':
                             auto_mac = items[1]
+        except FileNotFoundError:
+            print(f"Error! Can not find '{self.vmx_path}'")
 
-            self.mac = manual_mac if manual_mac else auto_mac
-            self.mac = self.mac.lower().strip('"')
+        self.mac = manual_mac if manual_mac else auto_mac
+        self.mac = self.mac.lower().strip('"') if self.mac else None
 
-    def __str__(self):
-        return f"Vm instance: '{self.name}'. IP: {self.ip}. MAC: {self.mac}"
+
 
 class Storage:
     def __init__(self):
-        self.vm_list = []
+        self.dev_items = {}
 
-        with open(DATA_FILE, "r") as f:
-            data = json.load(f)
-            for kwargs in data['vm']:
-                self.vm_list.append(Vm(**kwargs))
+        self.init_items()
+
+    def init_items(self):
+        try:
+            with open(DATA_FILE, 'r') as f:
+                data = json.load(f)
+
+            for item in data['items']:
+                if item.get('vmx_path'):
+                    obj = VmItem(**item)
+                else:
+                    obj = DevItem(**item)
+
+                if obj.name not in self.dev_items:
+                    self.dev_items[obj.name] = obj
+                else:
+                    print(f"Error! Duplicate item name '{obj.name}'")
+
+        except FileNotFoundError:
+            print(f"Error! File '{DATA_FILE}' not found")
+            exit(1)
+
+        except json.JSONDecodeError:
+            print(f"Error! Invalid JSON format in '{DATA_FILE}'")
+            exit(1)
+
+        except Exception as e:
+            print(f"Error! {e}")
+            exit(1)
+
 
 class Network:
     def __init__(self):
@@ -94,17 +133,20 @@ class Network:
         return f'ip: {self.ip}, netmask: {self.netmask}, cidr: {self.cidr}'
 
 
-def cmd_get_ip(args, store, network):
-    vm_list = store.vm_list
+class Cmd:
+    @staticmethod
+    def cmd_get_ip(args, storage, network):
+        find_name = args.pop(0) if args else None
 
-    if args:
-        name = args.pop(0) if args else ""
-        vm_list = [vm for vm in store.vm_list if name in vm.name]
+        dev_items = storage.dev_items.values()
 
-    for vm in vm_list:
-        if vm.ip is None:
-            vm.ip = network.get_ip_by_mac(vm.mac)
-        print(f'{vm.name:<20} {vm.ip:<15}')
+        if find_name:
+            dev_items = [i for i in dev_items if find_name in i.name]
+
+        for item in dev_items:
+            if item.mac and item.ip is None:
+                item.ip = network.get_ip_by_mac(item.mac)
+            print(f'{item.name or "Undefined":<20} {item.ip or "Undefined":<15}')
 
 
 if __name__ == '__main__':
@@ -119,4 +161,4 @@ if __name__ == '__main__':
         action_type = cmd_args.pop(0) if cmd_args else None
 
         if action_type == 'ip':
-            cmd_get_ip(cmd_args, storage, network)
+            Cmd.cmd_get_ip(cmd_args, storage, network)
