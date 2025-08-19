@@ -2,10 +2,10 @@ import sys
 from pathlib import Path
 
 from app_py.managers.network_manager import NetworkManager
-from managers.config_manager import ConfigManager
-from managers.cmd_manager import CmdManager
+from app_py.managers.config_manager import ConfigManager
+from app_py.managers.cmd_manager import CmdManager
 
-APP_DIR = Path(__file__).resolve().parent.parent
+APP_DIR = Path(__file__).resolve().parent
 ETC_DIR = APP_DIR / 'etc'
 CONFIG_FILE = ETC_DIR / 'config.json'
 

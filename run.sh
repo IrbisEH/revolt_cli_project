@@ -2,7 +2,7 @@
 
 PARENT_DIR="$(dirname "$(realpath "$0")")"
 VENV_PATH="$PARENT_DIR/.venv/bin/python3"
-SCRIPT_PATH="$PARENT_DIR/app_py/main.py"
+SCRIPT_PATH="$PARENT_DIR/main.py"
 
 if [ ! -f "$VENV_PATH" ]; then
     echo "Ошибка: Интерпретатор Python не найден в $VENV_PATH"
