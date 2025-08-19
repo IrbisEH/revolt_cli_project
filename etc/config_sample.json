@@ -1,0 +1,22 @@
+{
+  "config": {
+    "mac": "",
+    "interface": "",
+    "ip": "",
+    "user": "",
+    "password": "",
+    "vmx_roots": [
+    ],
+    "dev_items": [
+      {
+        "vmx_path": "",
+        "name": "",
+        "mac": "",
+        "ip": "",
+        "ssh_port": 22,
+        "user": "",
+        "password": ""
+      }
+    ]
+  }
+}
