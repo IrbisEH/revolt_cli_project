@@ -1,12 +1,14 @@
 class CmdManager:
-    def __init__(self, config, network):
+    def __init__(self, config, net_manager, vm_manager):
         self.config = config
-        self.network = network
+        self.net_manager = net_manager
+        self.vm_manager = vm_manager
+
         self.dev_items = config.dev_items
 
     def exec(self, args):
         try:
-            self.network.refresh_dev_items(self.dev_items)
+            self._refresh_dev_items()
 
             action = args.pop(0) if args else None
             a_type = args.pop(0) if args else None
@@ -27,3 +29,7 @@ class CmdManager:
     def get_ip_cmd(self):
         for item in self.dev_items:
             print(item)
+
+    def _refresh_dev_items(self, is_hard=False):
+        self.net_manager.refresh_dev_items(self.dev_items, is_hard)
+        self.vm_manager.refresh_dev_items(self.dev_items)
