@@ -1,4 +1,9 @@
 class CmdManager:
+    ACTIONS = [
+        'get',
+        'refresh'
+    ]
+
     def __init__(self, config, net_manager, vm_manager):
         self.config = config
         self.net_manager = net_manager
@@ -8,16 +13,19 @@ class CmdManager:
 
     def exec(self, args):
         try:
-            self._refresh_dev_items()
-
             action = args.pop(0) if args else None
             a_type = args.pop(0) if args else None
 
-            # get -> make table obj with filter
-            # refresh -> refresh arp hard
+            if action not in self.ACTIONS:
+                raise ValueError('Error! Invalid action.')
 
+            self._refresh_dev_items()
 
-            self.get_ip_cmd()
+            if action == 'get':
+                self.get_ip_cmd()
+
+            if action == 'refresh':
+                self._refresh_dev_items(True)
 
         except IndexError:
             print('Error! Wrong number of arguments')

@@ -6,12 +6,12 @@ from app_py.managers.vm_manager import VmManager
 from app_py.managers.config_manager import ConfigManager
 from app_py.managers.cmd_manager import CmdManager
 
-APP_DIR = Path(__file__).resolve().parent
+APP_DIR = Path(__file__).resolve().parent.parent
 ETC_DIR = APP_DIR / 'etc'
 CONFIG_FILE = ETC_DIR / 'config.json'
 
 
-if __name__ == '__main__':
+def main():
     config = ConfigManager(config_file=CONFIG_FILE)
     net_manager = NetworkManager(config)
     vm_manager = VmManager()
