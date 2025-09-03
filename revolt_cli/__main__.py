@@ -6,8 +6,8 @@ from revolt_cli.managers.vm_manager import VmManager
 from revolt_cli.managers.config_manager import ConfigManager
 from revolt_cli.managers.cmd_manager import CmdManager
 
-APP_DIR = Path(__file__).resolve().parent.parent
-CONFIG_FILE = APP_DIR / 'etc' / 'config.json'
+APP_DIR = Path(__file__).resolve().parent
+CONFIG_FILE = APP_DIR / 'data' / 'config.json'
 
 
 def main():
