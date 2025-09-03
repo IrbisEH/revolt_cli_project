@@ -3,31 +3,50 @@ ENTRY_POINT = revolt_cli/__main__.py
 DIST_DIR = dist
 BUILD_DIR = build_artifacts
 POETRY = poetry run
+APP_CONFIG = revolt_cli/data/config.json
 
-build: clean install pyinstaller_build poetry_build
-	@echo "Build completed!"
-	@echo "Binary: $(DIST_DIR)/$(BINARY_NAME)"
-	@echo "Python packages: $(BUILD_DIR)/"
+YELLOW = \033[33m
+GREEN = \033[92m
+RESET = \033[0m
+
+define yellow-echo
+    @echo "🤞$(YELLOW)$1$(RESET)"
+endef
+
+define green-echo
+    @echo "🙌$(GREEN)$1$(RESET)"
+endef
+
+build: clean install pyinstaller_build
+	$(call green-echo, "Build completed!")
+
+build_all: clean install pyinstaller_build poetry_build
+	$(call green-echo, "Build completed!")
+	$(call green-echo, "Binary: $(DIST_DIR)/$(BINARY_NAME)")
+	$(call green-echo, "Python packages: $(BUILD_DIR)/")
 
 install:
-	@echo "Installing dependencies via Poetry..."
+	$(call yellow-echo, "installing dependencies via Poetry...")
 	poetry install
+	$(call green-echo, "Installing process dependencies successfully done.")
 
 clean:
-	@echo "Cleaning previous builds..."
-	rm -rf build $(DIST_DIR) *.spec $(BUILD_DIR)
-	@echo "Clean completed."
+	$(call yellow-echo, "cleaning previous builds...")
+	@if [ -d $(DIST_DIR) ]; then rm -rf build $(DIST_DIR) *.spec $(BUILD_DIR); fi
+	@if [ -f $(APP_CONFIG) ]; then rm -f $(APP_CONFIG); fi
+	$(call green-echo, "Cleaning process successfully done.")
 
 pyinstaller_build:
-	@echo "Building binary $(BINARY_NAME) via PyInstaller..."
+	$(call yellow-echo, "building binary $(BINARY_NAME) via PyInstaller...")
 	$(POETRY) pyinstaller --onefile --name $(BINARY_NAME) $(ENTRY_POINT)
-	@echo "Binary ready in $(DIST_DIR)/$(BINARY_NAME)"
+	$(call green-echo, "Building viw PyInstaller process successfully done.")
+	$(call green-echo, "Binary ready in $(DIST_DIR)/$(BINARY_NAME)")
 
 poetry_build:
-	@echo "Building Python package (wheel and tar.gz)..."
+	$(call yellow-echo, "building Python package (wheel and tar.gz)...")
 	mkdir -p $(BUILD_DIR)
 	poetry build --format wheel --format sdist -o $(BUILD_DIR)
-	@echo "Python package ready in $(BUILD_DIR)/"
+	$(call green-echo, "Python package ready in $(BUILD_DIR)/")
 
 run: build
 	@./$(DIST_DIR)/$(BINARY_NAME)
