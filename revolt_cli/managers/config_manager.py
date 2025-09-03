@@ -1,6 +1,6 @@
 import json
 from pathlib import Path
-from app_py.data_models.models import DevItemModel
+from revolt_cli.data_models.models import DevItemModel
 
 
 class ConfigManager:
