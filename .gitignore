@@ -1,3 +1,10 @@
 .env
+
 poetry.lock
+revolt_cli.spec
+
+/build
+/build_artifacts
+/dist
+
 etc/config.json
