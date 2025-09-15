@@ -1,4 +1,3 @@
-import os
 import json
 from pathlib import Path
 from revolt_cli.data_models.models import DevItemModel
@@ -8,18 +7,25 @@ class ConfigManager:
     FILE_NAME = 'config.json'
 
     def __init__(self):
-        self.config_file = self.get_config_path()
-        print(self.config_file)
-        self.raw_data = dict()
+        user_config_dir = Path.home() / '.config' / 'revolt-cli'
+        user_config = user_config_dir / self.FILE_NAME
+        system_config = Path('/etc/revolt-cli') / self.FILE_NAME
 
-        if not os.path.isfile(self.config_file):
-            with open(self.config_file, 'w') as f:
-                f.write(json.dumps(self.raw_data))
+        if system_config.exists():
+            self.config_file = system_config
         else:
-            with open(self.config_file, 'r') as f:
-                self.raw_data = json.load(f)
+            self.config_file = user_config
+            if not user_config_dir.exists():
+                user_config_dir.mkdir(parents=True, exist_ok=True)
 
-        config = self.raw_data.get('config', {})
+        if not self.config_file.exists():
+            with open(self.config_file, 'w') as f:
+                f.write(json.dumps({}))
+
+        with open(self.config_file, 'r') as f:
+            data = json.load(f)
+
+        config = data.get('config', {})
 
         self.mac = config.get('mac')
         self.interface = config.get('interface')
@@ -37,14 +43,3 @@ class ConfigManager:
                 if str(vmx_path) in defined_paths:
                     continue
                 self.dev_items.append(DevItemModel(vmx_path=vmx_path))
-
-    def get_config_path(self):
-        user_config = Path.home() / '.config' / 'revolt-cli' / self.FILE_NAME
-        system_config = Path('/etc/revolt-cli') / self.FILE_NAME
-
-        if user_config.exists():
-            return user_config
-        elif system_config.exists():
-            return system_config
-        else:
-            raise FileNotFoundError('Error! Can not find config file!')
