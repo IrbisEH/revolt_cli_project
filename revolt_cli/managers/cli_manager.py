@@ -5,8 +5,8 @@ from revolt_cli.managers.terminal_manager import TerminalManager
 
 
 class CliManager:
-    def __init__(self, config: ConfigManager):
-        self.config = config
+    def __init__(self):
+        self.config = ConfigManager()
         self.cmd_manager = CmdManager()
         self.terminal = TerminalManager()
 

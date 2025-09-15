@@ -5,48 +5,7 @@
 sudo setcap cap_net_raw+ep ./path_to_app
 
 
+### add revolt-cli ###
 
-
-####
-
-#!/bin/bash
-
-set -e  # Если ошибка — выйти сразу
-
-# Название виртуального окружения
-VENV_DIR="compilation_venv"
-
-# Название итогового бинаря
-BINARY_NAME="revolt-cli"
-
-# Путь к основному файлу
-MAIN_SCRIPT="main.py"
-
-# Создать виртуальное окружение, если его нет
-if [ ! -d "$VENV_DIR" ]; then
-    echo "Создаю виртуальное окружение..."
-    python3 -m venv $VENV_DIR
-fi
-
-# Активировать виртуальное окружение
-source $VENV_DIR/bin/activate
-
-# Обновить pip
-pip install --upgrade pip
-
-# Установить PyInstaller
-pip install pyinstaller
-
-# Установить зависимости проекта
-pip install -r requirements.txt
-
-# Очистить предыдущие сборки
-rm -rf build dist ${BINARY_NAME}.spec
-
-# Собрать бинарь
-pyinstaller --onefile $MAIN_SCRIPT --name $BINARY_NAME
-
-# Деактивировать виртуальное окружение
-deactivate
-
-echo "✅ Сборка завершена. Бинарь: dist/$BINARY_NAME"
+sudo cp /home/irbis-eh/irbis_projects/revolt_cli_project/dist/revolt-cli /usr/local/bin/revolt-cli
+sudo chmod +x /usr/local/bin/revolt-cli

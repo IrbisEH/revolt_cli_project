@@ -7,5 +7,3 @@ revolt_cli.spec
 /build
 /build_artifacts
 /dist
-
-revolt_cli/data/config.json

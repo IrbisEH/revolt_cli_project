@@ -1,9 +1,8 @@
-BINARY_NAME = revolt_cli
+BINARY_NAME = revolt-cli
 ENTRY_POINT = revolt_cli/__main__.py
 DIST_DIR = dist
 BUILD_DIR = build_artifacts
 POETRY = poetry run
-APP_CONFIG = revolt_cli/data/config.json
 
 YELLOW = \033[33m
 GREEN = \033[92m
@@ -33,7 +32,6 @@ install:
 clean:
 	$(call yellow-echo, "cleaning previous builds...")
 	@if [ -d $(DIST_DIR) ]; then rm -rf build $(DIST_DIR) *.spec $(BUILD_DIR); fi
-	@if [ -f $(APP_CONFIG) ]; then rm -f $(APP_CONFIG); fi
 	$(call green-echo, "Cleaning process successfully done.")
 
 pyinstaller_build:
