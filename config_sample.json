@@ -1,13 +1,11 @@
 {
-  "app": {
-    "mac": "",
+  "app-module": {
     "interface": "",
-    "ip": "",
     "user": "",
     "password": ""
   },
   "dev-items-module": {
-        "vmx_roots": [],
+    "vmx_roots": [],
     "dev_items": [
       {
         "vmx_path": "",

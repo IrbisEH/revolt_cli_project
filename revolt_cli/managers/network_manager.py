@@ -3,11 +3,12 @@ import ipaddress
 import netifaces
 import subprocess
 from scapy.all import ARP, Ether, srp
+from revolt_cli.formatters.formatters import KeyValFormatter
 
 
-class NetworkManager:
-    def __init__(self, config):
-        self.interface = config.interface
+class NetworkManager(KeyValFormatter):
+    def __init__(self, interface: str):
+        self.interface = interface
 
         addrs = netifaces.ifaddresses(self.interface)
         ip_info = addrs[netifaces.AF_INET][0]
@@ -39,3 +40,7 @@ class NetworkManager:
             mac = received.hwsrc.lower()
             ip = received.psrc
             self.arp[mac] = ip
+
+    def __repr__(self):
+        filtered = {k: v for k, v in self.__dict__.items() if k != 'arp'}
+        return self.format(filtered)

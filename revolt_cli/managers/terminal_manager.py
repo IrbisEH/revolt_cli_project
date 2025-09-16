@@ -1,59 +1,85 @@
 import os
 import sys
-import threading
 import time
 import termios
+import threading
+import itertools
 
 class TerminalManager:
-    CMD_PROMPT = 'revolt-cli'
-    LOAD_SYMBOLS = ['⣾', '⣽', '⣻', '⢿', '⡿', '⣟', '⣯', '⣷']
+    APP_PROMPT = 'revolt-cli'
+    INPUT_PROMPT = '>'
 
     def __init__(self):
-        self.user_input = ''
-        self.loader = self.load_animation()
+        self.spinner = Spinner()
         self.fd = sys.stdin.fileno()
-        self.settings = termios.tcgetattr(self.fd)
+        self.settings = None
 
-    def get_input(self):
-        self.write()
-        return sys.stdin.readline()
+    def get_user_input(self):
+        sys.stdout.write(f'\r{self.APP_PROMPT} {self.INPUT_PROMPT} ')
+        sys.stdout.flush()
+        lines = sys.stdin.readline().strip()
+        return lines
 
-    def write(self, lines: str = None) -> None:
-        _lines = f'\r{self.CMD_PROMPT} > '
-
-        if lines:
-            _lines += f'{lines}\n'
-
-        sys.stdout.write(_lines)
+    @staticmethod
+    def print(lines: str = None) -> None:
+        _lines = '\r{}\n'
+        lines = _lines.format(lines or '')
+        sys.stdout.write(lines)
         sys.stdout.flush()
 
-    def show_loading(self, stop_event: threading.Event) -> None:
+    def start_load_animation(self) -> None:
         self.disable_input()
-        while not stop_event.is_set():
-            next(self.loader)
+        self.spinner.start()
+
+    def stop_load_animation(self):
+        self.spinner.stop()
         self.enable_input()
 
-    def clean(self):
-        os.system('clear')
-
-    def load_animation(self):
-        idx = 0
-
-        while True:
-            if idx >= len(self.LOAD_SYMBOLS):
-                idx = 0
-
-            time.sleep(0.1)
-            line = f'\r{self.CMD_PROMPT} {self.LOAD_SYMBOLS[idx]} '
-            sys.stdout.write(line)
-            sys.stdout.flush()
-            idx += 1
-            yield
-
     def disable_input(self):
+        self.settings = termios.tcgetattr(self.fd)
         new_settings = termios.tcgetattr(self.fd)
         new_settings[3] &= ~(termios.ICANON | termios.ECHO)
         termios.tcsetattr(self.fd, termios.TCSADRAIN, new_settings)
 
     def enable_input(self):
         termios.tcsetattr(self.fd, termios.TCSADRAIN, self.settings)
+
+
+class Spinner:
+    # TODO: попробовать показывать не сразу, а через мини время, что бы в большинстве случаев не мигать
+    def __init__(self, prefix='Loading'):
+        self.prefix = prefix
+        # TODO: !
+        self.spinner = itertools.cycle([
+            f'{prefix}     ',
+            f'{prefix}.     ',
+            f'{prefix}..    ',
+            f'{prefix}...   ',
+            f'{prefix}....  ',
+            f'{prefix} .... ',
+            f'{prefix}  ....',
+            f'{prefix}   ...',
+            f'{prefix}    ..',
+            f'{prefix}     .',
+            f'{prefix}      '
+        ])
+        self.stop_event = threading.Event()
+        self.thread = None
+
+    def start(self) -> None:
+        self.stop_event.clear()
+        self.thread = threading.Thread(target=self._animate, daemon=True)
+        self.thread.start()
+
+    def stop(self):
+        self.stop_event.set()
+        if self.thread:
+            self.thread.join()
+        sys.stdout.write('\r')
+        sys.stdout.flush()
+
+    def _animate(self) -> None:
+        while not self.stop_event.is_set():
+            sys.stdout.write(f'\r{next(self.spinner)}')
+            sys.stdout.flush()
+            time.sleep(0.1)
