@@ -39,12 +39,3 @@ class NetworkManager:
             mac = received.hwsrc.lower()
             ip = received.psrc
             self.arp[mac] = ip
-
-    def refresh_dev_items(self, dev_items: list, is_hard=False):
-        if is_hard:
-            self.arp_scan()
-
-        for obj in dev_items:
-            if not obj.mac:
-                continue
-            obj.ip = self.arp.get(obj.mac)
