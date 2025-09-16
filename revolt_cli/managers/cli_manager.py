@@ -21,9 +21,13 @@ class CliManager:
             )
             th.start()
 
-            self.cmd_manager.exec(user_input)
+            try:
+                result, response = self.cmd_manager.exec(user_input)
+            finally:
+                stop_event.set()
+                th.join()
 
-            stop_event.set()
-            th.join()
+            self.terminal.write(response)
 
-            self.terminal.write('some response')
+            if result == 1:
+                exit()
