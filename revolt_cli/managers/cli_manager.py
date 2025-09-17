@@ -75,7 +75,6 @@ class CliManager:
                 self.terminal.enable_input()
                 if response:
                     self.terminal.print(response)
-                self.terminal.print()
 
     def _parse_arguments(self, line):
         line = line.strip()
@@ -89,5 +88,9 @@ class CliManager:
     def devitems(self, args):
         return self.DevItemsModule.process(args)
 
+    def clear(self, args):
+        self.terminal.clear()
+
     def exit(self, args):
+        self.terminal.print('Goodbye!')
         exit()

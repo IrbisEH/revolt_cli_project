@@ -27,6 +27,10 @@ class TerminalManager:
         sys.stdout.write(lines)
         sys.stdout.flush()
 
+    @staticmethod
+    def clear():
+        os.system('clear')
+
     def start_load_animation(self) -> None:
         self.disable_input()
         self.spinner.start()
@@ -51,13 +55,11 @@ class Spinner:
         self.prefix = prefix
         # TODO: !
         self.spinner = itertools.cycle([
-            f'{prefix}     ',
             f'{prefix}.     ',
             f'{prefix}..    ',
             f'{prefix}...   ',
-            f'{prefix}....  ',
-            f'{prefix} .... ',
-            f'{prefix}  ....',
+            f'{prefix} ...  ',
+            f'{prefix}  ... ',
             f'{prefix}   ...',
             f'{prefix}    ..',
             f'{prefix}     .',
@@ -79,6 +81,7 @@ class Spinner:
         sys.stdout.flush()
 
     def _animate(self) -> None:
+        time.sleep(0.3)
         while not self.stop_event.is_set():
             sys.stdout.write(f'\r{next(self.spinner)}')
             sys.stdout.flush()

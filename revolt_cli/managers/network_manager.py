@@ -3,10 +3,9 @@ import ipaddress
 import netifaces
 import subprocess
 from scapy.all import ARP, Ether, srp
-from revolt_cli.formatters.formatters import KeyValFormatter
 
 
-class NetworkManager(KeyValFormatter):
+class NetworkManager():
     def __init__(self, interface: str):
         self.interface = interface
 
