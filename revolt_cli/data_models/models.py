@@ -2,17 +2,6 @@ from datetime import date, datetime
 from dataclasses import dataclass, fields
 
 
-@dataclass
-class RevoltConfig:
-    mac: str
-    interface: str
-    ip: str
-    user: str
-    password: str
-    vmx_roots: list
-    dev_items: []
-
-
 class DbItemModel:
     _SEP = '\t'
     _TABLE = None

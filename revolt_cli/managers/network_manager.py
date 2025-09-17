@@ -42,4 +42,4 @@ class NetworkManager():
 
     def __repr__(self):
         filtered = {k: v for k, v in self.__dict__.items() if k != 'arp'}
-        return self.format(filtered)
+        return filtered

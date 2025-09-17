@@ -50,7 +50,6 @@ class TerminalManager:
 
 
 class Spinner:
-    # TODO: попробовать показывать не сразу, а через мини время, что бы в большинстве случаев не мигать
     def __init__(self, prefix='Loading'):
         self.prefix = prefix
         # TODO: !
