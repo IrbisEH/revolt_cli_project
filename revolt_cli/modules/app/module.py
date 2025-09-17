@@ -60,6 +60,5 @@ class AppModule(Module, KeyValFormatter):
             output = {v[0]:v[1]() for k, v in self.network_items.items()}
             return self.format(output)
 
-
     def get_arp(self, args):
         return self.format(getattr(self.network, 'arp', {}))
