@@ -2,105 +2,71 @@ import os
 import sys
 import tty
 import time
+import select
 import termios
 import threading
 import itertools
+from revolt_cli.managers.log_manager import LogManager
+from revolt_cli.tools.decorators import log_process
 
 
 class TerminalManager:
     APP_PROMPT = 'revolt-cli'
     INPUT_CHAR = '>'
 
-    def __init__(self):
+    def __init__(self, config, queues):
+        self.stop_event = threading.Event()
+        self.config = config
+        self.queues = queues
+
+        self.log = LogManager(
+            self.__class__.__name__,
+            self.config.log_file,
+            log_level=self.config.log_level
+        )
+
         self.fd = sys.stdin.fileno()
         self.old_settings = termios.tcgetattr(self.fd)
-
-        self.spinner = Spinner()
-        self.fd = sys.stdin.fileno()
-        self.settings = None
-
         self.set_terminal()
+
+        self.cmd_line = ''
+        self.print_prompt = True
 
     def set_terminal(self):
         tty.setcbreak(self.fd)
 
-    def revert_terminal(self):
-        termios.tcsetattr(self.fd, termios.TCSADRAIN, self.old_settings)
-
     def get_terminal_settings(self):
         return termios.tcgetattr(self.fd)
 
-    def set_terminal_settings(self, settings):
-        pass
+    @log_process
+    def loop(self):
+        try:
+            while not self.stop_event.is_set():
 
-    def get_user_input(self):
-        sys.stdout.write(f'\r{self.APP_PROMPT} {self.INPUT_PROMPT} ')
-        sys.stdout.flush()
-        lines = sys.stdin.readline().strip()
-        return lines
+                if not self.cmd_line and self.print_prompt:
+                    self.print_prompt = False
+                    self.print(f'{self.APP_PROMPT} {self.INPUT_CHAR} ')
 
-    @staticmethod
-    def print(lines: str = None) -> None:
-        _lines = '\r{}\n'
-        lines = _lines.format(lines or '')
-        sys.stdout.write(lines)
-        sys.stdout.flush()
-
-    @staticmethod
-    def clear():
-        os.system('clear')
-
-    def start_load_animation(self) -> None:
-        self.disable_input()
-        self.spinner.start()
-
-    def stop_load_animation(self):
-        self.spinner.stop()
-        self.enable_input()
-
-    def disable_input(self):
-        self.settings = termios.tcgetattr(self.fd)
-        new_settings = termios.tcgetattr(self.fd)
-        new_settings[3] &= ~(termios.ICANON | termios.ECHO)
-        termios.tcsetattr(self.fd, termios.TCSADRAIN, new_settings)
-
-    def enable_input(self):
-        termios.tcsetattr(self.fd, termios.TCSADRAIN, self.settings)
-
-
-class Spinner:
-    def __init__(self, prefix='Loading'):
-        self.prefix = prefix
-        # TODO: !
-        self.spinner = itertools.cycle([
-            f'{prefix}.     ',
-            f'{prefix}..    ',
-            f'{prefix}...   ',
-            f'{prefix} ...  ',
-            f'{prefix}  ... ',
-            f'{prefix}   ...',
-            f'{prefix}    ..',
-            f'{prefix}     .',
-            f'{prefix}      '
-        ])
-        self.stop_event = threading.Event()
-        self.thread = None
-
-    def start(self) -> None:
-        self.stop_event.clear()
-        self.thread = threading.Thread(target=self._animate, daemon=True)
-        self.thread.start()
+                rlist, _, _ = select.select([sys.stdin], [], [], 0.1)
+                if rlist:
+                    ch = sys.stdin.read(1)
+                    if ch:
+                        self.print(ch)
+        finally:
+            termios.tcsetattr(self.fd, termios.TCSADRAIN, self.old_settings)
 
     def stop(self):
         self.stop_event.set()
-        if self.thread:
-            self.thread.join()
-        sys.stdout.write('\r')
+
+    def print(self, line):
+        if line not in ('\n', '\r'):
+            sys.stdout.write(line)
+            sys.stdout.flush()
+
+    def new_line(self):
+        sys.stdout.write('\n')
         sys.stdout.flush()
 
-    def _animate(self) -> None:
-        time.sleep(0.3)
-        while not self.stop_event.is_set():
-            sys.stdout.write(f'\r{next(self.spinner)}')
-            sys.stdout.flush()
-            time.sleep(0.1)
+    def carriage_return(self):
+        sys.stdout.write('\r')
+        sys.stdout.flush()

@@ -1,5 +1,20 @@
+import threading, queue
+from revolt_cli.managers.log_manager import LogManager
 from revolt_cli.managers.config_manager import ConfigManager
 from revolt_cli.managers.terminal_manager import TerminalManager
+from revolt_cli.tools.decorators import log_process
+
+
+class Queues:
+    def __init__(self):
+        self.to_manager = queue.Queue()
+        self.to_terminal = queue.Queue()
+
+
+class QueueMsg:
+    def __init__(self):
+        self.input = ''
+        self.output = ''
 
 
 class CliManager:
@@ -7,8 +22,15 @@ class CliManager:
 
     def __init__(self):
         self.config = ConfigManager()
-        self.terminal = TerminalManager()
-        self.modules = self.define_modules()
+
+        self.log = LogManager(
+            self.__class__.__name__,
+            self.config.log_file,
+            log_level=self.config.log_level
+        )
+
+        self.queues = Queues()
+        self.terminal = TerminalManager(self.config, self.queues)
 
     def __getattr__(self, name):
         if name not in self.modules:
@@ -24,74 +46,48 @@ class CliManager:
         setattr(self, name, instance)
         return instance
 
-    def define_modules(self):
-        modules = {}
-        all_config = self.config.read_config_file()
-        for key in all_config.keys():
-            if key == 'app-module':
-                from revolt_cli.modules.app.module import AppModule
-                modules['AppModule'] = AppModule
-
-            if key == 'dev-items-module':
-                from revolt_cli.modules.dev_items_module.module import DevItemsModule
-                modules['DevItemsModule'] = DevItemsModule
-
-        return modules
-
     def run(self):
+        th = threading.Thread(target=self.terminal.loop, daemon=False)
+
+        try:
+            th.start()
+            self.loop()
+        finally:
+            self.terminal.stop()
+
+    @log_process
+    def loop(self):
         while True:
-            user_input = self.terminal.get_user_input()
-            response = ''
-
-            self.terminal.disable_input()
-            self.terminal.spinner.start()
-
             try:
-                args = self._parse_arguments(user_input)
+                queue_obj = self.queues.to_manager.get()
 
-                if not len(args):
-                    raise AttributeError('No arguments provided.')
+                if queue_obj is None:
+                    continue
 
-                action = args.pop(0)
+                if not isinstance(queue_obj, QueueMsg):
+                    raise ValueError(f'Error! Get invalid queue object. Can not read terminal msg.')
 
-                if 'AppModule' in self.modules and action in self.modules['AppModule'].ACTIONS:
-                    args.insert(0, action)
-                    action = 'app'
+                cmd = queue_obj.user_input.split()
 
-                if not hasattr(self, action) or not callable(getattr(self, action)):
-                    raise AttributeError(f'Unknown command: {action}')
+                if not cmd:
+                    raise ValueError(f'Error! Get invalid user input "{queue_obj.user_input}"')
 
-                method = getattr(self, action)
-                response = method(args)
+                module = cmd[0]
+                args = cmd[1:]
 
-            except RuntimeError as e:
-                response = f'Error! {e}'
-            except AttributeError as e:
-                response = f'Error! {e}'
+                if module not in self.modules:
+                    raise ValueError(f'Error! Can not execute cmd from module "{module}"')
+
+                queue_obj.output = self.modules[module].execute(args)
+                self.queues.to_terminal.put(queue_obj)
+
+            except ValueError as e:
+                queue_obj = QueueMsg()
+                queue_obj.output = str(e)
+                self.queues.to_terminal.put(queue_obj.output)
+                self.log.error(queue_obj.output)
             except Exception as e:
-                response = f'Error! Failed to execute command "{user_input}" Exception: "{e}"'
-            finally:
-                self.terminal.spinner.stop()
-                self.terminal.enable_input()
-                if response:
-                    self.terminal.print(response)
-
-    def _parse_arguments(self, line):
-        line = line.strip()
-        if line == '':
-            return []
-        return line.split(self.SEP)
-
-    def app(self, args):
-        return self.AppModule.process(args)
-
-    def devitems(self, args):
-        return self.DevItemsModule.process(args)
-
-    def clear(self, args):
-        self.terminal.clear()
-
-    # TODO: Error! Failed to execute command "exit" Exception: "name 'exit' is not defined"
-    def exit(self, args):
-        self.terminal.print('Goodbye!')
-        exit()
+                queue_obj = QueueMsg()
+                queue_obj.output = f"Internal error: {str(e)}"
+                self.queues.to_terminal.put(queue_obj)
+                self.log.error(queue_obj.output)
