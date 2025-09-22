@@ -91,6 +91,7 @@ class CliManager:
     def clear(self, args):
         self.terminal.clear()
 
+    # TODO: Error! Failed to execute command "exit" Exception: "name 'exit' is not defined"
     def exit(self, args):
         self.terminal.print('Goodbye!')
         exit()

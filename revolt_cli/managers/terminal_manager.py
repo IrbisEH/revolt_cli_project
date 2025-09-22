@@ -1,5 +1,6 @@
 import os
 import sys
+import tty
 import time
 import termios
 import threading
@@ -7,12 +8,29 @@ import itertools
 
 class TerminalManager:
     APP_PROMPT = 'revolt-cli'
-    INPUT_PROMPT = '>'
+    INPUT_CHAR = '>'
 
     def __init__(self):
+        self.fd = sys.stdin.fileno()
+        self.old_settings = termios.tcgetattr(self.fd)
+
         self.spinner = Spinner()
         self.fd = sys.stdin.fileno()
         self.settings = None
+
+        self.set_terminal()
+
+    def set_terminal(self):
+        tty.setcbreak(self.fd)
+
+    def revert_terminal(self):
+        termios.tcsetattr(self.fd, termios.TCSADRAIN, self.old_settings)
+
+    def get_terminal_settings(self):
+        return termios.tcgetattr(self.fd)
+
+    def set_terminal_settings(self, settings):
+        pass
 
     def get_user_input(self):
         sys.stdout.write(f'\r{self.APP_PROMPT} {self.INPUT_PROMPT} ')
