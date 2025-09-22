@@ -5,7 +5,7 @@ import subprocess
 from scapy.all import ARP, Ether, srp
 
 
-class NetworkManager():
+class NetworkManager:
     def __init__(self, interface: str):
         self.interface = interface
 

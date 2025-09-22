@@ -5,6 +5,7 @@ import termios
 import threading
 import itertools
 
+
 class TerminalManager:
     APP_PROMPT = 'revolt-cli'
     INPUT_PROMPT = '>'
