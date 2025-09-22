@@ -6,13 +6,15 @@ import select
 import termios
 import threading
 import itertools
-from revolt_cli.managers.log_manager import LogManager
 from revolt_cli.tools.decorators import log_process
+from revolt_cli.managers.log_manager import LogManager
+from revolt_cli.models.models import QueueMsg
 
 
 class TerminalManager:
     APP_PROMPT = 'revolt-cli'
     INPUT_CHAR = '>'
+
 
     def __init__(self, config, queues):
         self.stop_event = threading.Event()
@@ -30,10 +32,12 @@ class TerminalManager:
         self.set_terminal()
 
         self.cmd_line = ''
-        self.print_prompt = True
 
     def set_terminal(self):
         tty.setcbreak(self.fd)
+        settings = termios.tcgetattr(self.fd)
+        settings[3] &= ~termios.ECHO
+        termios.tcsetattr(self.fd, termios.TCSADRAIN, settings)
 
     def get_terminal_settings(self):
         return termios.tcgetattr(self.fd)
@@ -41,17 +45,27 @@ class TerminalManager:
     @log_process
     def loop(self):
         try:
+            self.clear_line()
+
             while not self.stop_event.is_set():
+                rlist, _, _ = select.select([sys.stdin], [], [], 0.01)
 
-                if not self.cmd_line and self.print_prompt:
-                    self.print_prompt = False
-                    self.print(f'{self.APP_PROMPT} {self.INPUT_CHAR} ')
+                if not rlist:
+                    continue
 
-                rlist, _, _ = select.select([sys.stdin], [], [], 0.1)
-                if rlist:
-                    ch = sys.stdin.read(1)
-                    if ch:
-                        self.print(ch)
+                ch = sys.stdin.read(1)
+
+                if ch == '\n':
+                    # response = self.execute(self.cmd_line)
+                    queue_obj = QueueMsg(_input=self.cmd_line)
+                    self.queues.to_manager.put(queue_obj)
+                    self.cmd_line = ''
+                    self.clear_line()
+                    continue
+
+                self.cmd_line += ch
+                self.print(ch)
+
         finally:
             termios.tcsetattr(self.fd, termios.TCSADRAIN, self.old_settings)
 
@@ -59,14 +73,39 @@ class TerminalManager:
         self.stop_event.set()
 
     def print(self, line):
-        if line not in ('\n', '\r'):
-            sys.stdout.write(line)
-            sys.stdout.flush()
+        sys.stdout.write(line)
+        sys.stdout.flush()
+
+    def print_prompt(self):
+        self.print(f'{self.APP_PROMPT} {self.INPUT_CHAR} ')
 
     def new_line(self):
         sys.stdout.write('\n')
         sys.stdout.flush()
 
-    def carriage_return(self):
-        sys.stdout.write('\r')
+    def clear_line(self):
+        sys.stdout.write('\r\x1b[2K')
         sys.stdout.flush()
+        self.print_prompt()
+
+    # def execute(self, cmd_line):
+    #     start = int(time.time())
+    #
+    #
+    #     while
+    #
+    #
+    #
+    #
+    #
+    #     if cmd_line:
+    #
+    #
+    #
+    #
+    #
+    #         return ''
+    #     else:
+    #         return ''
+
+

@@ -1,20 +1,9 @@
-import threading, queue
+import threading
+from revolt_cli.models.models import Queues, QueueMsg
 from revolt_cli.managers.log_manager import LogManager
 from revolt_cli.managers.config_manager import ConfigManager
 from revolt_cli.managers.terminal_manager import TerminalManager
 from revolt_cli.tools.decorators import log_process
-
-
-class Queues:
-    def __init__(self):
-        self.to_manager = queue.Queue()
-        self.to_terminal = queue.Queue()
-
-
-class QueueMsg:
-    def __init__(self):
-        self.input = ''
-        self.output = ''
 
 
 class CliManager:
@@ -31,6 +20,8 @@ class CliManager:
 
         self.queues = Queues()
         self.terminal = TerminalManager(self.config, self.queues)
+
+        self.modules = []
 
     def __getattr__(self, name):
         if name not in self.modules:
@@ -61,33 +52,28 @@ class CliManager:
             try:
                 queue_obj = self.queues.to_manager.get()
 
-                if queue_obj is None:
-                    continue
-
                 if not isinstance(queue_obj, QueueMsg):
                     raise ValueError(f'Error! Get invalid queue object. Can not read terminal msg.')
 
-                cmd = queue_obj.user_input.split()
+                cmd = queue_obj.input.split()
 
                 if not cmd:
-                    raise ValueError(f'Error! Get invalid user input "{queue_obj.user_input}"')
+                    raise ValueError(f'Error! Get invalid user input "{queue_obj.input}"')
 
                 module = cmd[0]
                 args = cmd[1:]
 
                 if module not in self.modules:
-                    raise ValueError(f'Error! Can not execute cmd from module "{module}"')
+                    raise ValueError(f'Error! Can not execute cmd "{queue_obj.input}" for module "{module}"')
 
                 queue_obj.output = self.modules[module].execute(args)
                 self.queues.to_terminal.put(queue_obj)
 
             except ValueError as e:
-                queue_obj = QueueMsg()
-                queue_obj.output = str(e)
+                queue_obj = QueueMsg(_output=str(e))
                 self.queues.to_terminal.put(queue_obj.output)
                 self.log.error(queue_obj.output)
             except Exception as e:
-                queue_obj = QueueMsg()
-                queue_obj.output = f"Internal error: {str(e)}"
+                queue_obj = QueueMsg(_output=f'Internal error: {str(e)}')
                 self.queues.to_terminal.put(queue_obj)
                 self.log.error(queue_obj.output)
