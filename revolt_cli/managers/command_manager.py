@@ -1,16 +1,8 @@
-from abc import ABC, abstractmethod
 from typing import Tuple
 import subprocess
 
 
-class CommandManager(ABC):
-    @classmethod
-    @abstractmethod
-    def execute(cls, cmd: str, capture_output: bool = True) -> Tuple[int, str, str]:
-        pass
-
-
-class LinuxCommandManager(CommandManager):
+class LinuxCommandManager:
     @classmethod
     def execute(cls, cmd: str, capture_output: bool = True, text: bool = True) -> Tuple[int, str, str]:
         try:
