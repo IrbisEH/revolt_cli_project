@@ -38,9 +38,8 @@ class CliManager:
         return instance
 
     def run(self):
-        th = threading.Thread(target=self.terminal.loop, daemon=False)
-
         try:
+            th = threading.Thread(target=self.terminal.loop, daemon=False)
             th.start()
             self.loop()
         finally:
@@ -71,7 +70,7 @@ class CliManager:
 
             except ValueError as e:
                 queue_obj = QueueMsg(_output=str(e))
-                self.queues.to_terminal.put(queue_obj.output)
+                self.queues.to_terminal.put(queue_obj)
                 self.log.error(queue_obj.output)
             except Exception as e:
                 queue_obj = QueueMsg(_output=f'Internal error: {str(e)}')

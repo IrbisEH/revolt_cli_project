@@ -56,11 +56,12 @@ class TerminalManager:
                 ch = sys.stdin.read(1)
 
                 if ch == '\n':
-                    # response = self.execute(self.cmd_line)
-                    queue_obj = QueueMsg(_input=self.cmd_line)
-                    self.queues.to_manager.put(queue_obj)
+                    resp = self.send_cmd(self.cmd_line)
                     self.cmd_line = ''
-                    self.clear_line()
+                    self.new_line()
+                    self.print(resp)
+                    self.new_line()
+                    self.print_prompt()
                     continue
 
                 self.cmd_line += ch
@@ -72,7 +73,7 @@ class TerminalManager:
     def stop(self):
         self.stop_event.set()
 
-    def print(self, line):
+    def print(self, line=''):
         sys.stdout.write(line)
         sys.stdout.flush()
 
@@ -83,29 +84,19 @@ class TerminalManager:
         sys.stdout.write('\n')
         sys.stdout.flush()
 
-    def clear_line(self):
+    def clear_line(self, prompt=True):
         sys.stdout.write('\r\x1b[2K')
         sys.stdout.flush()
-        self.print_prompt()
+        if prompt:
+            self.print_prompt()
 
-    # def execute(self, cmd_line):
-    #     start = int(time.time())
-    #
-    #
-    #     while
-    #
-    #
-    #
-    #
-    #
-    #     if cmd_line:
-    #
-    #
-    #
-    #
-    #
-    #         return ''
-    #     else:
-    #         return ''
+    def send_cmd(self, cmd_line, timeout=None):
+        queue_obj = QueueMsg(_input=cmd_line)
+        self.queues.to_manager.put(queue_obj)
 
+        #TODO: add Timeout
+        queue_obj = self.queues.to_terminal.get()
 
+        #TODO: Check obj
+
+        return queue_obj.output
