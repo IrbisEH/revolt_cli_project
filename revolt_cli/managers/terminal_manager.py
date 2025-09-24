@@ -2,6 +2,7 @@ import os
 import sys
 import tty
 import time
+import queue
 import select
 import termios
 import threading
@@ -56,7 +57,7 @@ class TerminalManager:
                 ch = sys.stdin.read(1)
 
                 if ch == '\n':
-                    resp = self.send_cmd(self.cmd_line)
+                    resp = self.get_response(self.cmd_line, timeout=self.config.timeout_sec)
                     self.cmd_line = ''
                     self.new_line()
                     self.print(resp)
@@ -90,13 +91,19 @@ class TerminalManager:
         if prompt:
             self.print_prompt()
 
-    def send_cmd(self, cmd_line, timeout=None):
+    def get_response(self, cmd_line, timeout=None):
         queue_obj = QueueMsg(_input=cmd_line)
         self.queues.to_manager.put(queue_obj)
 
-        #TODO: add Timeout
-        queue_obj = self.queues.to_terminal.get()
+        try:
+            queue_obj = self.queues.to_terminal.get(timeout=timeout)
 
-        #TODO: Check obj
+            if not isinstance(queue_obj, QueueMsg):
+                raise ValueError(f'Error! Get invalid queue object. Can not read app msg.')
 
-        return queue_obj.output
+            return queue_obj.output
+
+        except queue.Empty:
+            return 'Error! App response timed out.'
+        except ValueError as e:
+            return str(e)
