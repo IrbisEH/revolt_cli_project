@@ -21,7 +21,7 @@ class CliManager:
         self.queues = Queues()
         self.terminal = TerminalManager(self.config, self.queues)
 
-        self.modules = []
+        self.modules = {}
 
     def __getattr__(self, name):
         if name not in self.modules:
