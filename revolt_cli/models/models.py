@@ -1,4 +1,4 @@
-import threading, queue
+import queue
 
 
 class Queues:

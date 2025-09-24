@@ -57,7 +57,7 @@ class TerminalManager:
                 ch = sys.stdin.read(1)
 
                 if ch == '\n':
-                    resp = self.get_response(self.cmd_line, timeout=self.config.timeout_sec)
+                    resp = self.get_response(self.cmd_line, timeout=self.config.app_response_timeout_sec)
                     self.cmd_line = ''
                     self.new_line()
                     self.print(resp)
@@ -99,7 +99,7 @@ class TerminalManager:
             queue_obj = self.queues.to_terminal.get(timeout=timeout)
 
             if not isinstance(queue_obj, QueueMsg):
-                raise ValueError(f'Error! Get invalid queue object. Can not read app msg.')
+                raise ValueError(f'Error! Get invalid queue object. Can not read app_module msg.')
 
             return queue_obj.output
 

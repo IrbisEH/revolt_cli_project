@@ -1,7 +1,7 @@
 from revolt_cli.modules.module import Module
 from revolt_cli.formatters.formatters import KeyValFormatter
 from revolt_cli.managers.network_manager import NetworkManager
-from revolt_cli.modules.app.config_manager import AppConfigManager
+from revolt_cli.modules.app_module.config_manager import AppConfigManager
 
 
 class AppModule(Module, KeyValFormatter):

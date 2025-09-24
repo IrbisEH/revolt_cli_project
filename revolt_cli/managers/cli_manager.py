@@ -1,7 +1,9 @@
 import threading
+
+from modules.app_module.module import AppModule
 from revolt_cli.models.models import Queues, QueueMsg
 from revolt_cli.managers.log_manager import LogManager
-from revolt_cli.managers.config_manager import ConfigManager
+from revolt_cli.managers.config_manager import CliConfigManager
 from revolt_cli.managers.terminal_manager import TerminalManager
 from revolt_cli.tools.decorators import log_process
 
@@ -10,7 +12,7 @@ class CliManager:
     SEP = ' '
 
     def __init__(self):
-        self.config = ConfigManager()
+        self.config = CliConfigManager()
 
         self.log = LogManager(
             self.__class__.__name__,
@@ -21,7 +23,9 @@ class CliManager:
         self.queues = Queues()
         self.terminal = TerminalManager(self.config, self.queues)
 
-        self.modules = {}
+        self.modules = {
+            'app': AppModule
+        }
 
     def __getattr__(self, name):
         if name not in self.modules:
@@ -36,6 +40,10 @@ class CliManager:
 
         setattr(self, name, instance)
         return instance
+
+    def import_modules(self):
+        if self.config.app_module:
+            from modules.app_module.module import AppModule
 
     def run(self):
         try:
